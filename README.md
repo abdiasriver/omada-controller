@@ -1,7 +1,7 @@
 # omada-docker-portainer
 Instalacion de omada controller en docker con portainer y docker compose
 
-## Instalacion portainer + docker + docker compose + omada en almalinux 8
+## Instalacion portainer + docker + docker compose debian
 
 ## Instalacion de Docker
 ```
