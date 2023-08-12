@@ -1,4 +1,4 @@
-# Insalacion de portainer y omada controller
+# Intalacion de portainer y omada controller
 - Alternativamente se puede instalar solamente omada si no se desea usar portainer, no hay ningun problema.
 
 ## Instalacion de portainer
