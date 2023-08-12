@@ -1,139 +1,114 @@
-# omada-docker-portainer
-Instalacion de omada controller en docker con portainer y docker compose
+# omada-debian
+Instalacion de controlador omada en debian 11
 
-## Instalacion portainer + docker + docker compose almalinux
-
-## Instalacion de Docker
 ```
-sudo su
+wget https://raw.githubusercontent.com/wirisp/omada-controller/main/omada.sh
 ```
 
 ```
-dnf makecache --refresh
+chmod +x omada.sh
 ```
 
 ```
-setenforce 0
-sed -i 's/^SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
+bash omada.sh
+```
+
+_Acceder al controlador por medio de la Ip:8043 u Ip:8088_
+
+## Eliminacion de omada
+
+```
+cd /opt/tplink/EAPController
+```
+```
+./uninstall.sh
+```
+
+## Instalacion alternativa en Docker 1
+
+```
+sudo apt-get update
 ```
 
 ```
-sudo timedatectl set-timezone America/Mexico_City
+sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
 ```
 
 ```
-dnf install -y yum-utils device-mapper-persistent-data
-yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo mkdir -m 0755 -p /etc/apt/keyrings
 ```
 
 ```
-dnf install docker-ce -y
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 ```
 
 ```
-systemctl start docker && systemctl enable docker
-```
-## Instalacion de Docker-compose
-
-```
-curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o docker-compose
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
 ```
-sudo mv docker-compose /usr/local/bin && sudo chmod +x /usr/local/bin/docker-compose
-sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+ sudo apt-get update
+ ```
+ 
+ ```
+ sudo chmod a+r /etc/apt/keyrings/docker.gpg
+ sudo apt-get update
+ ```
+ 
+ ```
+ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+ ```
+ 
+ ```
+ sudo curl -L "https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+ ```
+ 
+ ```
+ sudo chmod +x /usr/local/bin/docker-compose
+ ```
+ 
 ```
-
-## Omada controller desde docker con docker compose
-
-```
-nano docker-compose.yml
-```
-
-- Dentro del archivo colocamos
-
-```
-version: '3.3'
-services:
-  omada-controller:
-    container_name: omada-controller
-    image: 'mbentley/omada-controller:5.9'
-    restart: unless-stopped
-    network_mode: bridge
-    ports:
-      - '8088:8088'
-      - '8043:8043'
-      - '8843:8843'
-      - '29810:29810/udp'
-      - '29811:29811'
-      - '29812:29812'
-      - '29813:29813'
-      - '29814:29814'
-    environment:
-      - PUID=508
-      - PGID=508
-      - MANAGE_HTTP_PORT=8088
-      - MANAGE_HTTPS_PORT=8043
-      - PORTAL_HTTP_PORT=8088
-      - PORTAL_HTTPS_PORT=8843
-      - PORT_APP_DISCOVERY=27001
-      - PORT_ADOPT_V1=29812
-      - PORT_UPGRADE_V1=29813
-      - PORT_MANAGER_V1=29811
-      - PORT_MANAGER_V2=29814
-      - PORT_DISCOVERY=29810
-      - SHOW_SERVER_LOGS=true
-      - SHOW_MONGODB_LOGS=false
-      - SSL_CERT_NAME=tls.crt
-      - SSL_KEY_NAME=tls.key
-      - TZ=America/Mexico_City
-      - TLS_1_11_ENABLED=true
-    volumes:
-      - omada-data:/opt/tplink/EAPController/data
-      - omada-logs:/opt/tplink/EAPController/logs
-      - omada-work:/opt/tplink/EAPController/work'
-      - omada-cert:/cert'
-volumes:
-  omada-data:
-  omada-logs:
-  omada-work:
-  omada-cert:
-```
-
-```
+mkdir omada
+cd omada
+wget https://raw.githubusercontent.com/wirisp/omada-controller/master/docker-compose.yml
 docker-compose up -d
 ```
+- Usar la ultima version cambiando en docker-compose.yml a latest la version
 
-- Ingresamos a la web con la https://IP:8043
+# Aunque aparezca healty ir a `https://IP:8043`
+- La instalacion se puede usar en conjunto con el controlador unifi y no interfieren los puertos, yo la realize usando docker y portainer
 
-## Instalacion de portainer
-Lo utilizamos para administracion de los contenedores.
 
-```
-docker pull portainer/portainer
-```
+### Environment variables variables del sistema
+Si algun puerto se encuentra en uso, podemos cambiarlo de acuerdo a la tabla
 
-```
-docker run -d -p 9000:9000 --name miportainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /opt/portainer:/data portainer/portainer
-```
+| Environment variable | Default | Possible values | Description |
+| --- | --- | --- | --- |
+| HTTPPORT | `8080` | Port from `1025` to `65535` | Internal HTTP port, useful for redirection |
+| HTTPSPORT | `8043` | Port from `1025` to `65535` | Internal HTTPS port, useful for redirection |
 
-```
-docker ps
-sudo docker restart miportainer
-```
+### Notas
 
-- Ingresamos a portainer con IP:9000
-- Cambia la Ip a publica
-cambiar ip en Enviroments>local>Public IP
-- Si algo va mal
+- It is useful to change the HTTPSPORT as Omada redirects you to its internal `HTTPSPORT`.
+So if you want to run the container with `-p 8000:8000` for the HTTPS port, you need to set `HTTPSPORT=8000`.
+- From [TP Link Omada's FAQ](https://www.tp-link.com/us/support/faq/865), Omada controller uses the ports:
+    - 8043 (TCP) for https
+    - 8088 (TCP) for http
+    - 27001 (UDP) for controller discovery
+    - 27002 (TCP) for controller searching
+    - ~27017 (TCP) for mongo DB server~ (internally)
+    - 29810 (UDP) for EAP discovery
+    - 29811 (TCP) for EAP management
+    - 29812 (TCP) for EAP adoption
+    - 29813 (TCP) for EAP upgrading
 
-```
-dnf install firewalld -y
-systemctl enable --now firewalld
-firewall-cmd --permanent --add-port=8088/tcp
-firewall-cmd --permanent --add-port=8043/tcp
+## TODOs
 
-#firewall-cmd --permanent --zone=trusted --change-interface=docker0
-#firewall-cmd --permanent --zone=trusted --add-port=4243/tcp
-#firewall-cmd --reload
-```
+- [ ] Healthcheck
+- [ ] Instructions with proxy and port redirection
