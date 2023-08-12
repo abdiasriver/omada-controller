@@ -1,30 +1,26 @@
-# omada-debian
-Instalacion de controlador omada en debian 11
+# Insalacion de portainer y omada controller
+- Alternativamente se puede instalar solamente omada si no se desea usar portainer, no hay ningun problema.
+
+## Instalacion de portainer
+Lo utilizamos para administracion de los contenedores.
 
 ```
-wget https://raw.githubusercontent.com/wirisp/omada-controller/main/omada.sh
+docker pull portainer/portainer
 ```
 
 ```
-chmod +x omada.sh
+docker run -d -p 9000:9000 --name miportainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v /opt/portainer:/data portainer/portainer
 ```
 
 ```
-bash omada.sh
+docker ps
+sudo docker restart miportainer
 ```
 
-_Acceder al controlador por medio de la Ip:8043 u Ip:8088_
+- Ingresamos a portainer con IP:9000
+- Cambia la Ip a publica en `Enviroments>local>Public IP` alli colocar la ip publica de nuestro servidor.
 
-## Eliminacion de omada
-
-```
-cd /opt/tplink/EAPController
-```
-```
-./uninstall.sh
-```
-
-## Instalacion alternativa en Docker 1
+## Instalacion omada-controller en Docker 
 
 ```
 sudo apt-get update
@@ -79,9 +75,9 @@ cd omada
 wget https://raw.githubusercontent.com/wirisp/omada-controller/master/docker-compose.yml
 docker-compose up -d
 ```
-- Usar la ultima version cambiando en docker-compose.yml a latest la version
-
-# Aunque aparezca healty ir a `https://IP:8043`
+- Usar la ultima version cambiando en docker-compose.yml a `latest` en la version
+- Ir a portainer ( `http://ip:9000` ) , en containers se encontrara.
+- Aunque aparezca healty ir a `https://IP:8043`
 - La instalacion se puede usar en conjunto con el controlador unifi y no interfieren los puertos, yo la realize usando docker y portainer
 
 
